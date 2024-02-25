@@ -5313,7 +5313,8 @@ static Model LoadGLTF(const char *fileName)
                         {
                             // Handle 16-bit unsigned short, vec2 format
                             model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*2, sizeof(unsigned short));
-                            LOAD_ATTRIBUTE(attribute, 2, unsigned short, model.meshes[meshIndex].boneIds)
+                            unsigned short* ptr = (unsigned short*)model.meshes[meshIndex].boneIds;
+                            LOAD_ATTRIBUTE(attribute, 2, unsigned short, ptr)
                         }
                         else if ((attribute->component_type == cgltf_component_type_r_32u) && (attribute->type == cgltf_type_vec4))
                         {
@@ -5325,7 +5326,8 @@ static Model LoadGLTF(const char *fileName)
                         {
                             // Handle 32-bit float, vec2 format
                             model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*2, sizeof(float));
-                            LOAD_ATTRIBUTE(attribute, 2, float, model.meshes[meshIndex].boneIds)
+                            float* ptr = (float*)model.meshes[meshIndex].boneIds;
+                            LOAD_ATTRIBUTE(attribute, 2, float, ptr)
                         }
                         else TRACELOG(LOG_WARNING, "MODEL: [%s] Joint attribute data format not supported", fileName);
                     }
@@ -5395,7 +5397,7 @@ static bool GetPoseAtTimeGLTF(cgltf_accessor *input, cgltf_accessor *output, flo
         }
     }
 
-    float t = (time - tstart)/(tend - tstart);
+    float t = (time - tstart)/fmax((tend - tstart), EPSILON);
     t = (t < 0.0f)? 0.0f : t;
     t = (t > 1.0f)? 1.0f : t;
 
@@ -5533,7 +5535,7 @@ static ModelAnimation *LoadModelAnimationsGLTF(const char *fileName, int *animCo
                 strncpy(animations[i].name, animData.name, sizeof(animations[i].name));
                 animations[i].name[sizeof(animations[i].name) - 1] = '\0';
 
-                animations[i].frameCount = (int)(animDuration*1000.0f/GLTF_ANIMDELAY);
+                animations[i].frameCount = (int)(animDuration*1000.0f/GLTF_ANIMDELAY) + 1;
                 animations[i].framePoses = RL_MALLOC(animations[i].frameCount*sizeof(Transform *));
 
                 for (int j = 0; j < animations[i].frameCount; j++)

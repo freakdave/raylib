@@ -73,7 +73,6 @@
     #define SPLINE_SEGMENT_DIVISIONS      24      // Spline segment divisions
 #endif
 
-
 //----------------------------------------------------------------------------------
 // Types and Structures Definition
 //----------------------------------------------------------------------------------
@@ -137,7 +136,6 @@ void DrawPixelV(Vector2 position, Color color)
 {
 #if defined(SUPPORT_QUADS_DRAW_MODE)
     rlSetTexture(GetShapesTexture().id);
-
     Rectangle shapeRect = GetShapesTextureRectangle();
 
     rlBegin(RL_QUADS);
@@ -145,16 +143,16 @@ void DrawPixelV(Vector2 position, Color color)
         rlNormal3f(0.0f, 0.0f, 1.0f);
         rlColor4ub(color.r, color.g, color.b, color.a);
 
-        rlTexCoord2f(shapeRect.x/ shapeRect.width, shapeRect.y/ shapeRect.height);
+        rlTexCoord2f(shapeRect.x/texShapes.width, shapeRect.y/texShapes.height);
         rlVertex2f(position.x, position.y);
 
-        rlTexCoord2f(shapeRect.x/ shapeRect.width, (shapeRect.y + shapeRect.height)/ shapeRect.height);
+        rlTexCoord2f(shapeRect.x/texShapes.width, (shapeRect.y + shapeRect.height)/texShapes.height);
         rlVertex2f(position.x, position.y + 1);
 
-        rlTexCoord2f((shapeRect.x + shapeRect.width)/ shapeRect.width, (shapeRect.y + shapeRect.height)/ shapeRect.height);
+        rlTexCoord2f((shapeRect.x + shapeRect.width)/texShapes.width, (shapeRect.y + shapeRect.height)/texShapes.height);
         rlVertex2f(position.x + 1, position.y + 1);
 
-        rlTexCoord2f((shapeRect.x + shapeRect.width)/ shapeRect.width, shapeRect.y/ shapeRect.height);
+        rlTexCoord2f((shapeRect.x + shapeRect.width)/texShapes.width, shapeRect.y/texShapes.height);
         rlVertex2f(position.x + 1, position.y);
 
     rlEnd();

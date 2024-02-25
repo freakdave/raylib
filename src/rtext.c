@@ -556,7 +556,7 @@ Font LoadFontFromMemory(const char *fileType, const unsigned char *fileData, int
     Font font = { 0 };
 
     char fileExtLower[16] = { 0 };
-    strcpy(fileExtLower, TextToLower(fileType));
+    strncpy(fileExtLower, TextToLower(fileType), 16 - 1);
 
     font.baseSize = fontSize;
     font.glyphCount = (codepointCount > 0)? codepointCount : 95;
@@ -997,7 +997,7 @@ bool ExportFontAsCode(Font font, const char *fileName)
 
     // Get file name from path
     char fileNamePascal[256] = { 0 };
-    strcpy(fileNamePascal, TextToPascal(GetFileNameWithoutExt(fileName)));
+    strncpy(fileNamePascal, TextToPascal(GetFileNameWithoutExt(fileName)), 256 - 1);
 
     // NOTE: Text data buffer size is estimated considering image data size in bytes
     // and requiring 6 char bytes for every byte: "0x00, "
@@ -1137,7 +1137,6 @@ bool ExportFontAsCode(Font font, const char *fileName)
 
     return success;
 }
-
 
 // Draw current FPS
 // NOTE: Uses default font
@@ -1464,7 +1463,6 @@ const char *TextFormat(const char *text, ...)
     return currentBuffer;
 }
 
-
 // Get integer value from text
 // NOTE: This function replaces atoi() [stdlib.h]
 int TextToInteger(const char *text)
@@ -1725,7 +1723,8 @@ const char **TextSplit(const char *text, char delimiter, int *count)
     return result;
 }
 
-// Append text at specific position and move cursor!
+// Append text at specific position and move cursor
+// WARNING: It's up to the user to make sure appended text does not overflow the buffer!
 // REQUIRES: strcpy()
 void TextAppend(char *text, const char *append, int *position)
 {
@@ -2289,23 +2288,12 @@ static Font LoadBMFont(const char *fileName)
 #if defined(SUPPORT_FILEFORMAT_BDF)
 
 // Convert hexadecimal to decimal (single digit)
-static char HexToInt(char hex) {
-    if (hex >= '0' && hex <= '9')
-    {
-        return hex - '0';
-    }
-    else if (hex >= 'a' && hex <= 'f')
-    {
-        return hex - 'a' + 10;
-    }
-    else if (hex >= 'A' && hex <= 'F')
-    {
-        return hex - 'A' + 10;
-    }
-    else
-    {
-        return 0;
-    }
+static unsigned char HexToInt(char hex)
+{
+    if (hex >= '0' && hex <= '9') return hex - '0';
+    else if (hex >= 'a' && hex <= 'f') return hex - 'a' + 10;
+    else if (hex >= 'A' && hex <= 'F') return hex - 'A' + 10;
+    else return 0;
 }
 
 // Load font data for further use
@@ -2390,15 +2378,15 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
 
                     for (int x = 0; x < readBytes; x++)
                     {
-                        char byte = HexToInt(buffer[x]);
+                        unsigned char byte = HexToInt(buffer[x]);
                         
                         for (int bitX = 0; bitX < 4; bitX++)
                         {
-                            int pixelX = ((x * 4) + bitX);
+                            int pixelX = ((x*4) + bitX);
                             
                             if (pixelX >= charGlyphInfo->image.width) break;
 
-                            if ((byte & (8 >> bitX)) > 0) ((unsigned char*)charGlyphInfo->image.data)[(pixelY * charGlyphInfo->image.width) + pixelX] = 255;
+                            if ((byte & (8 >> bitX)) > 0) ((unsigned char *)charGlyphInfo->image.data)[(pixelY*charGlyphInfo->image.width) + pixelX] = 255;
                         }
                     }
                 }
@@ -2449,7 +2437,7 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
                     charGlyphInfo->offsetY = fontBBh - (charBBh + charBByoff0 + fontBByoff0 + fontAscent);
                     charGlyphInfo->advanceX = charDWidthX;
 
-                    charGlyphInfo->image.data = RL_CALLOC(charBBw * charBBh, 1);
+                    charGlyphInfo->image.data = RL_CALLOC(charBBw*charBBh, 1);
                     charGlyphInfo->image.width = charBBw;
                     charGlyphInfo->image.height = charBBh;
                     charGlyphInfo->image.mipmaps = 1;

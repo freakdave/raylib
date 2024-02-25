@@ -1648,7 +1648,6 @@ void ImageResizeNN(Image *image,int newWidth,int newHeight)
     UnloadImageColors(pixels);
 }
 
-
 // Resize and image to new size
 // NOTE: Uses stb default scaling filters (both bicubic):
 // STBIR_DEFAULT_FILTER_UPSAMPLE    STBIR_FILTER_CATMULLROM
@@ -2102,7 +2101,6 @@ void ImageBlurGaussian(Image *image, int blurSize) {
         }
     }
 
-
     // Reverse premultiply
     for (int i = 0; i < (image->width)*(image->height); i++)
     {
@@ -2152,7 +2150,6 @@ void ImageKernelConvolution(Image *image, float* kernel, int kernelSize)
     Vector4 *imageCopy2 = RL_MALLOC((image->height)*(image->width)*sizeof(Vector4));
     Vector4 *temp = RL_MALLOC(kernelSize*sizeof(Vector4));
 
-
     for (int i = 0; i < kernelSize; i++)
     {
         temp[i].x = 0.0f;
@@ -2191,7 +2188,7 @@ void ImageKernelConvolution(Image *image, float* kernel, int kernelSize)
                     int ykabs = yk + kernelWidth/2;
                     unsigned int imgindex = image->width*(x + xk) + (y + yk);
                     
-                    if (imgindex >= image->width*image->height)
+                    if (imgindex >= (unsigned int)(image->width*image->height))
                     {
                         temp[kernelWidth * xkabs + ykabs].x = 0.0f;
                         temp[kernelWidth * xkabs + ykabs].y = 0.0f;

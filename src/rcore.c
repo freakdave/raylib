@@ -226,6 +226,9 @@ __declspec(dllimport) int __stdcall WideCharToMultiByte(unsigned int cp, unsigne
 #ifndef MAX_GAMEPAD_BUTTONS
     #define MAX_GAMEPAD_BUTTONS           32        // Maximum number of buttons supported (per gamepad)
 #endif
+#ifndef MAX_GAMEPAD_VIBRATION_TIME
+    #define MAX_GAMEPAD_VIBRATION_TIME     2.0f     // Maximum vibration time in seconds
+#endif
 #ifndef MAX_TOUCH_POINTS
     #define MAX_TOUCH_POINTS               8        // Maximum number of touch points supported
 #endif
@@ -364,7 +367,7 @@ static int screenshotCounter = 0;    // Screenshots counter
 #endif
 
 #if defined(SUPPORT_GIF_RECORDING)
-int gifFrameCounter = 0;             // GIF frames counter
+unsigned int gifFrameCounter = 0;    // GIF frames counter
 bool gifRecording = false;           // GIF recording state
 MsfGifState gifState = { 0 };        // MSGIF context state
 #endif
@@ -1412,7 +1415,7 @@ void SetShaderValueTexture(Shader shader, int locIndex, Texture2D texture)
 // Get a ray trace from mouse position
 Ray GetMouseRay(Vector2 mousePosition, Camera camera)
 {
-    return GetViewRay(mousePosition, camera, GetScreenWidth(), GetScreenHeight());
+    return GetViewRay(mousePosition, camera, (float)GetScreenWidth(), (float)GetScreenHeight());
 }
 
 // Get a ray trace from the mouse position within a specific section of the screen
@@ -1699,7 +1702,6 @@ void WaitTime(double seconds)
 
 // NOTE: Functions with a platform-specific implementation on rcore_<platform>.c
 //void OpenURL(const char *url)
-
 
 // Set the seed for the random number generator
 void SetRandomSeed(unsigned int seed)
