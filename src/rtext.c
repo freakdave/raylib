@@ -562,7 +562,7 @@ Font LoadFontFromMemory(const char *fileType, const unsigned char *fileData, int
     font.glyphCount = (codepointCount > 0)? codepointCount : 95;
     font.glyphPadding = 0;
 
-#if defined(SUPPORT_FILEFORMAT_TTF) 
+#if defined(SUPPORT_FILEFORMAT_TTF)
     if (TextIsEqual(fileExtLower, ".ttf") ||
         TextIsEqual(fileExtLower, ".otf"))
     {
@@ -1494,10 +1494,10 @@ float TextToFloat(const char *text)
         if (text[0] == '-') sign = -1.0f;
         text++;
     }
-    
+
     int i = 0;
     for (; ((text[i] >= '0') && (text[i] <= '9')); i++) value = value*10.0f + (float)(text[i] - '0');
-    
+
     if (text[i++] != '.') value *= sign;
     else
     {
@@ -1508,7 +1508,7 @@ float TextToFloat(const char *text)
             divisor = divisor*10.0f;
         }
     }
-    
+
     return value;
 }
 
@@ -2301,7 +2301,7 @@ static unsigned char HexToInt(char hex)
 static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, int *codepoints, int codepointCount, int *outFontSize)
 {
     #define MAX_BUFFER_SIZE 256
-    
+
     char buffer[MAX_BUFFER_SIZE] = { 0 };
 
     GlyphInfo *glyphs = NULL;
@@ -2315,7 +2315,7 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
     const char *fileTextPtr = fileText;
 
     bool fontMalformed = false;     // Is the font malformed
-    bool fontStarted = false;       // Has font started (STARTFONT) 
+    bool fontStarted = false;       // Has font started (STARTFONT)
     int fontBBw = 0;                // Font base character bounding box width
     int fontBBh = 0;                // Font base character bounding box height
     int fontBBxoff0 = 0;            // Font base character bounding box X0 offset
@@ -2326,7 +2326,7 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
     bool charBitmapStarted = false; // Has bitmap data started (BITMAP)
     int charBitmapNextRow = 0;      // Y position for the next row of bitmap data
     int charEncoding = -1;          // The unicode value of the character (-1 if not set)
-    int charBBw = 0;                // Character bounding box width 
+    int charBBw = 0;                // Character bounding box width
     int charBBh = 0;                // Character bounding box height
     int charBBxoff0 = 0;            // Character bounding box X0 offset
     int charBByoff0 = 0;            // Character bounding box Y0 offset
@@ -2373,17 +2373,17 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
                 if (charGlyphInfo != NULL)
                 {
                     int pixelY = charBitmapNextRow++;
-                    
+
                     if (pixelY >= charGlyphInfo->image.height) break;
 
                     for (int x = 0; x < readBytes; x++)
                     {
                         unsigned char byte = HexToInt(buffer[x]);
-                        
+
                         for (int bitX = 0; bitX < 4; bitX++)
                         {
                             int pixelX = ((x*4) + bitX);
-                            
+
                             if (pixelX >= charGlyphInfo->image.width) break;
 
                             if ((byte & (8 >> bitX)) > 0) ((unsigned char *)charGlyphInfo->image.data)[(pixelY*charGlyphInfo->image.width) + pixelX] = 255;
@@ -2419,7 +2419,7 @@ static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, i
             {
                 // Search for glyph index in codepoints
                 charGlyphInfo = NULL;
-                
+
                 for (int codepointIndex = 0; codepointIndex < codepointCount; codepointIndex++)
                 {
                     if (codepoints[codepointIndex] == charEncoding)

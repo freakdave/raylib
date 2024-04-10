@@ -120,12 +120,12 @@
 
 #if defined(SUPPORT_GESTURES_SYSTEM)
     #define RGESTURES_IMPLEMENTATION
-    #include "rgestures.h"           // Gestures detection functionality
+    #include "rgestures.h"          // Gestures detection functionality
 #endif
 
 #if defined(SUPPORT_CAMERA_SYSTEM)
     #define RCAMERA_IMPLEMENTATION
-    #include "rcamera.h"             // Camera system functionality
+    #include "rcamera.h"            // Camera system functionality
 #endif
 
 #if defined(SUPPORT_GIF_RECORDING)
@@ -294,16 +294,16 @@ typedef struct CoreData {
     struct {
         struct {
             int exitKey;                    // Default exit key
-            char currentKeyState[MAX_KEYBOARD_KEYS]; // Registers current frame key state
-            char previousKeyState[MAX_KEYBOARD_KEYS]; // Registers previous frame key state
+            char currentKeyState[MAX_KEYBOARD_KEYS];        // Registers current frame key state
+            char previousKeyState[MAX_KEYBOARD_KEYS];       // Registers previous frame key state
 
             // NOTE: Since key press logic involves comparing prev vs cur key state, we need to handle key repeats specially
-            char keyRepeatInFrame[MAX_KEYBOARD_KEYS]; // Registers key repeats for current frame.
+            char keyRepeatInFrame[MAX_KEYBOARD_KEYS];       // Registers key repeats for current frame.
 
-            int keyPressedQueue[MAX_KEY_PRESSED_QUEUE]; // Input keys queue
+            int keyPressedQueue[MAX_KEY_PRESSED_QUEUE];     // Input keys queue
             int keyPressedQueueCount;       // Input keys queue count
 
-            int charPressedQueue[MAX_CHAR_PRESSED_QUEUE]; // Input characters queue (unicode)
+            int charPressedQueue[MAX_CHAR_PRESSED_QUEUE];   // Input characters queue (unicode)
             int charPressedQueueCount;      // Input characters queue count
 
         } Keyboard;
@@ -333,7 +333,7 @@ typedef struct CoreData {
         } Touch;
         struct {
             int lastButtonPressed;          // Register last gamepad button pressed
-            int axisCount[MAX_GAMEPADS];                  // Register number of available gamepad axis
+            int axisCount[MAX_GAMEPADS];    // Register number of available gamepad axis
             bool ready[MAX_GAMEPADS];       // Flag to know if gamepad is ready
             char name[MAX_GAMEPADS][64];    // Gamepad name holder
             char currentButtonState[MAX_GAMEPADS][MAX_GAMEPAD_BUTTONS];     // Current gamepad buttons state
@@ -855,23 +855,33 @@ void EndDrawing(void)
     // Draw record indicator
     if (gifRecording)
     {
+        #ifndef GIF_RECORD_FRAMERATE
         #define GIF_RECORD_FRAMERATE    10
-        gifFrameCounter++;
+        #endif
+        gifFrameCounter += GetFrameTime()*1000;
 
-        // NOTE: We record one gif frame every 10 game frames
-        if ((gifFrameCounter%GIF_RECORD_FRAMERATE) == 0)
+        // NOTE: We record one gif frame depending on the desired gif framerate
+        if (gifFrameCounter > 1000/GIF_RECORD_FRAMERATE)
         {
             // Get image data for the current frame (from backbuffer)
             // NOTE: This process is quite slow... :(
             Vector2 scale = GetWindowScaleDPI();
             unsigned char *screenData = rlReadScreenPixels((int)((float)CORE.Window.render.width*scale.x), (int)((float)CORE.Window.render.height*scale.y));
-            msf_gif_frame(&gifState, screenData, 10, 16, (int)((float)CORE.Window.render.width*scale.x)*4);
+
+            #ifndef GIF_RECORD_BITRATE
+            #define GIF_RECORD_BITRATE 16
+            #endif
+
+            // Add the frame to the gif recording, given how many frames have passed in centiseconds
+            msf_gif_frame(&gifState, screenData, gifFrameCounter/10, GIF_RECORD_BITRATE, (int)((float)CORE.Window.render.width*scale.x)*4);
+            gifFrameCounter -= 1000/GIF_RECORD_FRAMERATE;
 
             RL_FREE(screenData);    // Free image data
         }
 
     #if defined(SUPPORT_MODULE_RSHAPES) && defined(SUPPORT_MODULE_RTEXT)
-        if (((gifFrameCounter/15)%2) == 1)
+        // Display the recording indicator every half-second
+        if ((int)(GetTime()/0.5)%2 == 1)
         {
             DrawCircle(30, CORE.Window.screen.height - 20, 10, MAROON);                 // WARNING: Module required: rshapes
             DrawText("GIF RECORDING", 50, CORE.Window.screen.height - 25, 10, RED);     // WARNING: Module required: rtext
@@ -1412,21 +1422,21 @@ void SetShaderValueTexture(Shader shader, int locIndex, Texture2D texture)
 // Module Functions Definition: Screen-space Queries
 //----------------------------------------------------------------------------------
 
-// Get a ray trace from mouse position
-Ray GetMouseRay(Vector2 mousePosition, Camera camera)
+// Get a ray trace from screen position (i.e mouse)
+Ray GetScreenToWorldRay(Vector2 position, Camera camera)
 {
-    return GetViewRay(mousePosition, camera, (float)GetScreenWidth(), (float)GetScreenHeight());
+    return GetScreenToWorldRayEx(position, camera, GetScreenWidth(), GetScreenHeight());
 }
 
-// Get a ray trace from the mouse position within a specific section of the screen
-Ray GetViewRay(Vector2 mousePosition, Camera camera, float width, float height)
+// Get a ray trace from the screen position (i.e mouse) within a specific section of the screen
+Ray GetScreenToWorldRayEx(Vector2 position, Camera camera, int width, int height)
 {
     Ray ray = { 0 };
 
     // Calculate normalized device coordinates
     // NOTE: y value is negative
-    float x = (2.0f*mousePosition.x)/width - 1.0f;
-    float y = 1.0f - (2.0f*mousePosition.y)/height;
+    float x = (2.0f*position.x)/(float)width - 1.0f;
+    float y = 1.0f - (2.0f*position.y)/(float)height;
     float z = 1.0f;
 
     // Store values in a vector
@@ -1805,7 +1815,7 @@ void TakeScreenshot(const char *fileName)
 
     char path[512] = { 0 };
     strcpy(path, TextFormat("%s/%s", CORE.Storage.basePath, GetFileName(fileName)));
-    
+
     ExportImage(image, path);           // WARNING: Module required: rtextures
     RL_FREE(imgData);
 
@@ -1961,7 +1971,7 @@ const char *GetFileName(const char *filePath)
 const char *GetFileNameWithoutExt(const char *filePath)
 {
     #define MAX_FILENAME_LENGTH     256
-    
+
     static char fileName[MAX_FILENAME_LENGTH] = { 0 };
     memset(fileName, 0, MAX_FILENAME_LENGTH);
 
@@ -1969,7 +1979,7 @@ const char *GetFileNameWithoutExt(const char *filePath)
     {
         strcpy(fileName, GetFileName(filePath)); // Get filename.ext without path
         int size = (int)strlen(fileName); // Get size in bytes
-        
+
         for (int i = size; i > 0; i--) // Reverse search '.'
         {
             if (fileName[i] == '.')
@@ -1980,7 +1990,7 @@ const char *GetFileNameWithoutExt(const char *filePath)
             }
         }
     }
-    
+
     return fileName;
 }
 

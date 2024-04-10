@@ -54,8 +54,8 @@
 #include "raymath.h"        // Required for: Vector3, Quaternion and Matrix functionality
 
 #include <stdio.h>          // Required for: sprintf()
-#include <stdlib.h>         // Required for: malloc(), free()
-#include <string.h>         // Required for: memcmp(), strlen()
+#include <stdlib.h>         // Required for: malloc(), calloc(), free()
+#include <string.h>         // Required for: memcmp(), strlen(), strncpy()
 #include <math.h>           // Required for: sinf(), cosf(), sqrtf(), fabsf()
 
 #if defined(SUPPORT_FILEFORMAT_OBJ) || defined(SUPPORT_FILEFORMAT_MTL)
@@ -1499,9 +1499,6 @@ void DrawMesh(Mesh mesh, Material material, Matrix transform)
         if (mesh.indices != NULL) rlEnableVertexBufferElement(mesh.vboId[6]);
     }
 
-    // WARNING: Disable vertex attribute color input if mesh can not provide that data (despite location being enabled in shader)
-    if (mesh.vboId[3] == 0) rlDisableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR]);
-
     int eyeCount = 1;
     if (rlIsStereoRenderEnabled()) eyeCount = 2;
 
@@ -1720,9 +1717,6 @@ void DrawMeshInstanced(Mesh mesh, Material material, const Matrix *transforms, i
         if (mesh.indices != NULL) rlEnableVertexBufferElement(mesh.vboId[6]);
     }
 
-    // WARNING: Disable vertex attribute color input if mesh can not provide that data (despite location being enabled in shader)
-    if (mesh.vboId[3] == 0) rlDisableVertexAttribute(material.shader.locs[SHADER_LOC_VERTEX_COLOR]);
-
     int eyeCount = 1;
     if (rlIsStereoRenderEnabled()) eyeCount = 2;
 
@@ -1912,7 +1906,7 @@ bool ExportMeshAsCode(Mesh mesh, const char *fileName)
     byteCount += sprintf(txtData + byteCount, "// Mesh basic information\n");
     byteCount += sprintf(txtData + byteCount, "#define %s_VERTEX_COUNT    %i\n", varFileName, mesh.vertexCount);
     byteCount += sprintf(txtData + byteCount, "#define %s_TRIANGLE_COUNT   %i\n\n", varFileName, mesh.triangleCount);
-    
+
     // Define vertex attributes data as separate arrays
     //-----------------------------------------------------------------------------------------
     if (mesh.vertices != NULL)      // Vertex position (XYZ - 3 components per vertex - float)
@@ -1921,28 +1915,28 @@ bool ExportMeshAsCode(Mesh mesh, const char *fileName)
         for (int i = 0; i < mesh.vertexCount*3 - 1; i++) byteCount += sprintf(txtData + byteCount, ((i%TEXT_BYTES_PER_LINE == 0)? "%.3ff,\n" : "%.3ff, "), mesh.vertices[i]);
         byteCount += sprintf(txtData + byteCount, "%.3ff };\n\n", mesh.vertices[mesh.vertexCount*3 - 1]);
     }
-    
-    if (mesh.texcoords != NULL)      // Vertex texture coordinates (UV - 2 components per vertex - float) 
+
+    if (mesh.texcoords != NULL)      // Vertex texture coordinates (UV - 2 components per vertex - float)
     {
         byteCount += sprintf(txtData + byteCount, "static float %s_TEXCOORD_DATA[%i] = { ", varFileName, mesh.vertexCount*2);
         for (int i = 0; i < mesh.vertexCount*2 - 1; i++) byteCount += sprintf(txtData + byteCount, ((i%TEXT_BYTES_PER_LINE == 0)? "%.3ff,\n" : "%.3ff, "), mesh.texcoords[i]);
         byteCount += sprintf(txtData + byteCount, "%.3ff };\n\n", mesh.texcoords[mesh.vertexCount*2 - 1]);
     }
-    
-    if (mesh.texcoords2 != NULL)      // Vertex texture coordinates (UV - 2 components per vertex - float) 
+
+    if (mesh.texcoords2 != NULL)      // Vertex texture coordinates (UV - 2 components per vertex - float)
     {
         byteCount += sprintf(txtData + byteCount, "static float %s_TEXCOORD2_DATA[%i] = { ", varFileName, mesh.vertexCount*2);
         for (int i = 0; i < mesh.vertexCount*2 - 1; i++) byteCount += sprintf(txtData + byteCount, ((i%TEXT_BYTES_PER_LINE == 0)? "%.3ff,\n" : "%.3ff, "), mesh.texcoords2[i]);
         byteCount += sprintf(txtData + byteCount, "%.3ff };\n\n", mesh.texcoords2[mesh.vertexCount*2 - 1]);
     }
-    
+
     if (mesh.normals != NULL)      // Vertex normals (XYZ - 3 components per vertex - float)
     {
         byteCount += sprintf(txtData + byteCount, "static float %s_NORMAL_DATA[%i] = { ", varFileName, mesh.vertexCount*3);
         for (int i = 0; i < mesh.vertexCount*3 - 1; i++) byteCount += sprintf(txtData + byteCount, ((i%TEXT_BYTES_PER_LINE == 0)? "%.3ff,\n" : "%.3ff, "), mesh.normals[i]);
         byteCount += sprintf(txtData + byteCount, "%.3ff };\n\n", mesh.normals[mesh.vertexCount*3 - 1]);
     }
-    
+
     if (mesh.tangents != NULL)      // Vertex tangents (XYZW - 4 components per vertex - float)
     {
         byteCount += sprintf(txtData + byteCount, "static float %s_TANGENT_DATA[%i] = { ", varFileName, mesh.vertexCount*4);
@@ -4079,7 +4073,7 @@ static Model LoadOBJ(const char *fileName)
         model.meshCount = meshCount;
 
         // Set number of materials available
-        // NOTE: There could be more materials available than meshes but it will be resolved at 
+        // NOTE: There could be more materials available than meshes but it will be resolved at
         // model.meshMaterial, just assigning the right material to corresponding mesh
         model.materialCount = materialCount;
         if (model.materialCount == 0)
@@ -4097,7 +4091,7 @@ static Model LoadOBJ(const char *fileName)
         for (int i = 0; i < model.meshCount; i++)
         {
             // WARNING: We need to calculate the mesh triangles manually using meshes[i].face_offset
-            // because in case of triangulated quads, meshes[i].length actually report quads, 
+            // because in case of triangulated quads, meshes[i].length actually report quads,
             // despite the triangulation that is efectively considered on attrib.num_faces
             unsigned int tris = 0;
             if (i == model.meshCount - 1) tris = attrib.num_faces - meshes[i].face_offset;
@@ -5311,22 +5305,38 @@ static Model LoadGLTF(const char *fileName)
                         }
                         else if ((attribute->component_type == cgltf_component_type_r_16u) && (attribute->type == cgltf_type_vec2))
                         {
+                            // TODO: WARNING: model.meshes[].boneIds is an (unsigned char *) --> Conversion required!
+
                             // Handle 16-bit unsigned short, vec2 format
                             model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*2, sizeof(unsigned short));
-                            unsigned short* ptr = (unsigned short*)model.meshes[meshIndex].boneIds;
+                            unsigned short *ptr = (unsigned short *)model.meshes[meshIndex].boneIds;
                             LOAD_ATTRIBUTE(attribute, 2, unsigned short, ptr)
+                        }
+                        else if ((attribute->component_type == cgltf_component_type_r_16u) && (attribute->type == cgltf_type_vec4))
+                        {
+                            // TODO: WARNING: model.meshes[].boneIds is an (unsigned char *) --> Conversion required!
+
+                            // Handle 16-bit unsigned short, vec4 format
+                            model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*4, sizeof(unsigned short));
+                            unsigned short *ptr = (unsigned short *)model.meshes[meshIndex].boneIds;
+                            LOAD_ATTRIBUTE(attribute, 4, unsigned short, ptr)
                         }
                         else if ((attribute->component_type == cgltf_component_type_r_32u) && (attribute->type == cgltf_type_vec4))
                         {
+                            // TODO: WARNING: model.meshes[].boneIds is an (unsigned char *) --> Conversion required!
+
                             // Handle 32-bit unsigned int, vec4 format
                             model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*4, sizeof(unsigned int));
-                            LOAD_ATTRIBUTE(attribute, 4, unsigned int, model.meshes[meshIndex].boneIds)
+                            unsigned int *ptr = (unsigned int *)model.meshes[meshIndex].boneIds;
+                            LOAD_ATTRIBUTE(attribute, 4, unsigned int, ptr)
                         }
                         else if ((attribute->component_type == cgltf_component_type_r_32f) && (attribute->type == cgltf_type_vec2))
                         {
+                            // TODO: WARNING: model.meshes[].boneIds is an (unsigned char *) --> Conversion required!
+
                             // Handle 32-bit float, vec2 format
                             model.meshes[meshIndex].boneIds = RL_CALLOC(model.meshes[meshIndex].vertexCount*2, sizeof(float));
-                            float* ptr = (float*)model.meshes[meshIndex].boneIds;
+                            float *ptr = (float *)model.meshes[meshIndex].boneIds;
                             LOAD_ATTRIBUTE(attribute, 2, float, ptr)
                         }
                         else TRACELOG(LOG_WARNING, "MODEL: [%s] Joint attribute data format not supported", fileName);
@@ -5654,6 +5664,7 @@ static Model LoadVOX(const char *fileName)
 
     // 6*4 = 12 vertices per voxel
     Vector3 *pvertices = (Vector3 *)voxarray.vertices.array;
+    Vector3 *pnormals = (Vector3 *)voxarray.normals.array;
     Color *pcolors = (Color *)voxarray.colors.array;
 
     unsigned short *pindices = voxarray.indices.array;    // 5461*6*6 = 196596 indices max per mesh
@@ -5669,12 +5680,16 @@ static Model LoadVOX(const char *fileName)
         pmesh->vertexCount = (int)fmin(verticesMax, verticesRemain);
 
         size = pmesh->vertexCount*sizeof(float)*3;
-        pmesh->vertices = RL_MALLOC(size);
+        pmesh->vertices = (float *)RL_MALLOC(size);
         memcpy(pmesh->vertices, pvertices, size);
+
+        // Copy normals
+        pmesh->normals = (float *)RL_MALLOC(size);
+        memcpy(pmesh->normals, pnormals, size);
 
         // Copy indices
         size = voxarray.indices.used*sizeof(unsigned short);
-        pmesh->indices = RL_MALLOC(size);
+        pmesh->indices = (unsigned short *)RL_MALLOC(size);
         memcpy(pmesh->indices, pindices, size);
 
         pmesh->triangleCount = (pmesh->vertexCount/4)*2;
@@ -5689,6 +5704,7 @@ static Model LoadVOX(const char *fileName)
 
         verticesRemain -= verticesMax;
         pvertices += verticesMax;
+        pnormals += verticesMax;
         pcolors += verticesMax;
     }
 
@@ -5817,6 +5833,12 @@ static Model LoadM3D(const char *fileName)
                 // If no map is provided, or we have colors defined, we allocate storage for vertex colors
                 // M3D specs only consider vertex colors if no material is provided, however raylib uses both and mixes the colors
                 if ((mi == M3D_UNDEF) || vcolor) model.meshes[k].colors = RL_CALLOC(model.meshes[k].vertexCount*4, sizeof(unsigned char));
+
+                // If no map is provided and we allocated vertex colors, set them to white
+                if ((mi == M3D_UNDEF) && (model.meshes[k].colors != NULL))
+                {
+                    for (int c = 0; c < model.meshes[k].vertexCount*4; c++) model.meshes[k].colors[c] = 255;
+                }
 
                 if (m3d->numbone && m3d->numskin)
                 {
@@ -6081,8 +6103,9 @@ static ModelAnimation *LoadModelAnimationsM3D(const char *fileName, int *animCou
             animations[a].boneCount = m3d->numbone + 1;
             animations[a].bones = RL_MALLOC((m3d->numbone + 1)*sizeof(BoneInfo));
             animations[a].framePoses = RL_MALLOC(animations[a].frameCount*sizeof(Transform *));
-	    strncpy(animations[a].name, m3d->action[a].name, sizeof(animations[a].name));
-	    animations[a].name[sizeof(animations[a].name) - 1] = '\0';
+            strncpy(animations[a].name, m3d->action[a].name, sizeof(animations[a].name));
+            animations[a].name[sizeof(animations[a].name) - 1] = '\0';
+
             TRACELOG(LOG_INFO, "MODEL: [%s] animation #%i: %i msec, %i frames", fileName, a, m3d->action[a].durationmsec, animations[a].frameCount);
 
             for (i = 0; i < (int)m3d->numbone; i++)
