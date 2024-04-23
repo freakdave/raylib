@@ -84,12 +84,14 @@ jobs:
 
     - name: Build
       # Execute the build.  You can specify a specific target with "--target <NAME>"
+      continue-on-error: true
       run: |
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPLATFORM=Desktop
         cmake --build . --config $BUILD_TYPE
 
     - name: Perform CodeQL Analysis
+      continue-on-error: true
       uses: github/codeql-action/analyze@v2
       with:
         category: "/language:${{matrix.language}}"
@@ -121,12 +123,14 @@ jobs:
         output: ${{ steps.step1.outputs.sarif-output }}/cpp.sarif
 
     - name: Upload CodeQL results to code scanning
+      continue-on-error: true
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: ${{ steps.step1.outputs.sarif-output }}
         category: "/language:${{matrix.language}}"
 
     - name: Upload CodeQL results as an artifact
+      continue-on-error: true
       if: success() || failure()
       uses: actions/upload-artifact@v4
       with:

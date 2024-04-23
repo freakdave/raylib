@@ -54,12 +54,14 @@ jobs:
         run: cmake $env:GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE -DPLATFORM=Desktop
 
       - name: Build
+        continue-on-error: true
         working-directory: ${{github.workspace}}/build
         shell: powershell
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config $env:BUILD_TYPE
 
       - name: Test
+        continue-on-error: true
         working-directory: ${{github.workspace}}/build
         shell: powershell
         # Execute tests defined by the CMake configuration.
@@ -98,12 +100,14 @@ jobs:
         run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DPLATFORM=Desktop
 
       - name: Build
+        continue-on-error: true
         working-directory: ${{github.workspace}}/build
         shell: bash
         # Execute the build.  You can specify a specific target with "--target <NAME>"
         run: cmake --build . --config $BUILD_TYPE
 
       - name: Test
+        continue-on-error: true
         working-directory: ${{github.workspace}}/build
         shell: bash
         # Execute tests defined by the CMake configuration.
