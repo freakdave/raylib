@@ -184,8 +184,9 @@ void DrawLine(int startPosX, int startPosY, int endPosX, int endPosY, Color colo
     #else
     rlBegin(RL_LINES);
         rlColor4ub(color.r, color.g, color.b, color.a);
-        rlVertex2f((float)startPosX, (float)startPosY);
-        rlVertex2f((float)endPosX, (float)endPosY);
+        // WARNING: Adding 0.5f offset to "center" point on selected pixel
+        rlVertex2f((float)startPosX + 0.5f, (float)startPosY + 0.5f);
+        rlVertex2f((float)endPosX + 0.5f, (float)endPosY + 0.5f);
     rlEnd();
     #endif
 }
@@ -195,8 +196,9 @@ void DrawLineV(Vector2 startPos, Vector2 endPos, Color color)
 {
     rlBegin(RL_LINES);
         rlColor4ub(color.r, color.g, color.b, color.a);
-        rlVertex2f(startPos.x, startPos.y);
-        rlVertex2f(endPos.x, endPos.y);
+        // WARNING: Adding 0.5f offset to "center" point on selected pixel
+        rlVertex2f(startPos.x + 0.5f, startPos.y + 0.5f);
+        rlVertex2f(endPos.x + 0.5f, endPos.y + 0.5f);
     rlEnd();
 }
 
@@ -857,17 +859,17 @@ void DrawRectangleLines(int posX, int posY, int width, int height, Color color)
 #else
     rlBegin(RL_LINES);
         rlColor4ub(color.r, color.g, color.b, color.a);
-        rlVertex2f(posX, posY);
-        rlVertex2f(posX + width, posY + 1);
+        rlVertex2f((float)posX, (float)posY);
+        rlVertex2f((float)posX + (float)width, (float)posY + 1);
 
-        rlVertex2f(posX + width, posY + 1);
-        rlVertex2f(posX + width, posY + height);
+        rlVertex2f((float)posX + (float)width, (float)posY + 1);
+        rlVertex2f((float)posX + (float)width, (float)posY + (float)height);
 
-        rlVertex2f(posX + width, posY + height);
-        rlVertex2f(posX + 1, posY + height);
+        rlVertex2f((float)posX + (float)width, (float)posY + (float)height);
+        rlVertex2f((float)posX + 1, (float)posY + (float)height);
 
-        rlVertex2f(posX + 1, posY + height);
-        rlVertex2f(posX + 1, posY + 1);
+        rlVertex2f((float)posX + 1, (float)posY + (float)height);
+        rlVertex2f((float)posX + 1, (float)posY + 1);
     rlEnd();
 #endif
 #endif

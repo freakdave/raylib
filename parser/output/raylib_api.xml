@@ -476,7 +476,7 @@
             <Value name="GAMEPAD_BUTTON_RIGHT_FACE_LEFT" integer="8" desc="Gamepad right button left (i.e. PS3: Square, Xbox: X)" />
             <Value name="GAMEPAD_BUTTON_LEFT_TRIGGER_1" integer="9" desc="Gamepad top/back trigger left (first), it could be a trailing button" />
             <Value name="GAMEPAD_BUTTON_LEFT_TRIGGER_2" integer="10" desc="Gamepad top/back trigger left (second), it could be a trailing button" />
-            <Value name="GAMEPAD_BUTTON_RIGHT_TRIGGER_1" integer="11" desc="Gamepad top/back trigger right (one), it could be a trailing button" />
+            <Value name="GAMEPAD_BUTTON_RIGHT_TRIGGER_1" integer="11" desc="Gamepad top/back trigger right (first), it could be a trailing button" />
             <Value name="GAMEPAD_BUTTON_RIGHT_TRIGGER_2" integer="12" desc="Gamepad top/back trigger right (second), it could be a trailing button" />
             <Value name="GAMEPAD_BUTTON_MIDDLE_LEFT" integer="13" desc="Gamepad center buttons, left one (i.e. PS3: Select)" />
             <Value name="GAMEPAD_BUTTON_MIDDLE" integer="14" desc="Gamepad center buttons, middle one (i.e. PS3: PS, Xbox: XBOX)" />
@@ -627,11 +627,11 @@
             <Value name="GESTURE_PINCH_OUT" integer="512" desc="Pinch out gesture" />
         </Enum>
         <Enum name="CameraMode" valueCount="5" desc="Camera system modes">
-            <Value name="CAMERA_CUSTOM" integer="0" desc="Custom camera" />
-            <Value name="CAMERA_FREE" integer="1" desc="Free camera" />
-            <Value name="CAMERA_ORBITAL" integer="2" desc="Orbital camera" />
-            <Value name="CAMERA_FIRST_PERSON" integer="3" desc="First person camera" />
-            <Value name="CAMERA_THIRD_PERSON" integer="4" desc="Third person camera" />
+            <Value name="CAMERA_CUSTOM" integer="0" desc="Camera custom, controlled by user (UpdateCamera() does nothing)" />
+            <Value name="CAMERA_FREE" integer="1" desc="Camera free mode" />
+            <Value name="CAMERA_ORBITAL" integer="2" desc="Camera orbital, around target, zoom supported" />
+            <Value name="CAMERA_FIRST_PERSON" integer="3" desc="Camera first person" />
+            <Value name="CAMERA_THIRD_PERSON" integer="4" desc="Camera third person" />
         </Enum>
         <Enum name="CameraProjection" valueCount="2" desc="Camera projection">
             <Value name="CAMERA_PERSPECTIVE" integer="0" desc="Perspective projection" />

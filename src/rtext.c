@@ -144,7 +144,7 @@ static Font LoadBMFont(const char *fileName);   // Load a BMFont file (AngelCode
 #if defined(SUPPORT_FILEFORMAT_BDF)
 static GlyphInfo *LoadFontDataBDF(const unsigned char *fileData, int dataSize, int *codepoints, int codepointCount, int *outFontSize);
 #endif
-static int textLineSpacing = 15;                // Text vertical line spacing in pixels
+static int textLineSpacing = 2;                 // Text vertical line spacing in pixels (between lines)
 
 #if defined(SUPPORT_DEFAULT_FONT)
 extern void LoadFontDefault(void);
@@ -1201,7 +1201,7 @@ void DrawTextEx(Font font, const char *text, Vector2 position, float fontSize, f
 
     int size = TextLength(text);    // Total size in bytes of the text, scanned by codepoints in loop
 
-    int textOffsetY = 0;            // Offset between lines (on linebreak '\n')
+    float textOffsetY = 0;          // Offset between lines (on linebreak '\n')
     float textOffsetX = 0.0f;       // Offset X to next character to draw
 
     float scaleFactor = fontSize/font.baseSize;         // Character quad scaling factor
@@ -1216,7 +1216,7 @@ void DrawTextEx(Font font, const char *text, Vector2 position, float fontSize, f
         if (codepoint == '\n')
         {
             // NOTE: Line spacing is a global variable, use SetTextLineSpacing() to setup
-            textOffsetY += textLineSpacing;
+            textOffsetY += (fontSize + textLineSpacing);
             textOffsetX = 0.0f;
         }
         else
@@ -1284,7 +1284,7 @@ void DrawTextCodepoint(Font font, int codepoint, Vector2 position, float fontSiz
 // Draw multiple character (codepoints)
 void DrawTextCodepoints(Font font, const int *codepoints, int codepointCount, Vector2 position, float fontSize, float spacing, Color tint)
 {
-    int textOffsetY = 0;            // Offset between lines (on linebreak '\n')
+    float textOffsetY = 0;          // Offset between lines (on linebreak '\n')
     float textOffsetX = 0.0f;       // Offset X to next character to draw
 
     float scaleFactor = fontSize/font.baseSize;         // Character quad scaling factor
@@ -1296,7 +1296,7 @@ void DrawTextCodepoints(Font font, const int *codepoints, int codepointCount, Ve
         if (codepoints[i] == '\n')
         {
             // NOTE: Line spacing is a global variable, use SetTextLineSpacing() to setup
-            textOffsetY += textLineSpacing;
+            textOffsetY += (fontSize + textLineSpacing);
             textOffsetX = 0.0f;
         }
         else
@@ -1378,7 +1378,7 @@ Vector2 MeasureTextEx(Font font, const char *text, float fontSize, float spacing
             textWidth = 0;
 
             // NOTE: Line spacing is a global variable, use SetTextLineSpacing() to setup
-            textHeight += (float)textLineSpacing;
+            textHeight += (fontSize + textLineSpacing);
         }
 
         if (tempByteCounter < byteCounter) tempByteCounter = byteCounter;
