@@ -1085,7 +1085,7 @@ bool ExportFontAsCode(Font font, const char *fileName)
 
     // Save font recs data
     byteCount += sprintf(txtData + byteCount, "// Font characters rectangles data\n");
-    byteCount += sprintf(txtData + byteCount, "static const Rectangle fontRecs_%s[%i] = {\n", fileNamePascal, font.glyphCount);
+    byteCount += sprintf(txtData + byteCount, "static Rectangle fontRecs_%s[%i] = {\n", fileNamePascal, font.glyphCount);
     for (int i = 0; i < font.glyphCount; i++)
     {
         byteCount += sprintf(txtData + byteCount, "    { %1.0f, %1.0f, %1.0f , %1.0f },\n", font.recs[i].x, font.recs[i].y, font.recs[i].width, font.recs[i].height);
@@ -1097,7 +1097,7 @@ bool ExportFontAsCode(Font font, const char *fileName)
     // it could be generated from image and recs
     byteCount += sprintf(txtData + byteCount, "// Font glyphs info data\n");
     byteCount += sprintf(txtData + byteCount, "// NOTE: No glyphs.image data provided\n");
-    byteCount += sprintf(txtData + byteCount, "static const GlyphInfo fontGlyphs_%s[%i] = {\n", fileNamePascal, font.glyphCount);
+    byteCount += sprintf(txtData + byteCount, "static GlyphInfo fontGlyphs_%s[%i] = {\n", fileNamePascal, font.glyphCount);
     for (int i = 0; i < font.glyphCount; i++)
     {
         byteCount += sprintf(txtData + byteCount, "    { %i, %i, %i, %i, { 0 }},\n", font.glyphs[i].value, font.glyphs[i].offsetX, font.glyphs[i].offsetY, font.glyphs[i].advanceX);
@@ -2299,7 +2299,11 @@ static Font LoadBMFont(const char *fileName)
             // Fill character image data from full font data
             font.glyphs[i].image = ImageFromImage(fullFont, font.recs[i]);
         }
-        else TRACELOG(LOG_WARNING, "FONT: [%s] Some characters data not correctly provided", fileName);
+        else
+        {
+            font.glyphs[i].image = GenImageColor(font.recs[i].width, font.recs[i].height, BLACK);
+            TRACELOG(LOG_WARNING, "FONT: [%s] Some characters data not correctly provided", fileName);
+        }
     }
 
     UnloadImage(fullFont);

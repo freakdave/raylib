@@ -157,13 +157,15 @@
 #endif
 
 // Platform specific defines to handle GetApplicationDirectory()
-#if defined(_WIN32)
+#if (defined(_WIN32) && !defined(PLATFORM_DESKTOP_RGFW)) || (defined(_MSC_VER) && defined(PLATFORM_DESKTOP_RGFW))
     #ifndef MAX_PATH
         #define MAX_PATH 1025
     #endif
 __declspec(dllimport) unsigned long __stdcall GetModuleFileNameA(void *hModule, void *lpFilename, unsigned long nSize);
 __declspec(dllimport) unsigned long __stdcall GetModuleFileNameW(void *hModule, void *lpFilename, unsigned long nSize);
 __declspec(dllimport) int __stdcall WideCharToMultiByte(unsigned int cp, unsigned long flags, void *widestr, int cchwide, void *str, int cbmb, void *defchar, int *used_default);
+unsigned int __stdcall timeBeginPeriod(unsigned int uPeriod);
+unsigned int __stdcall timeEndPeriod(unsigned int uPeriod);
 #elif defined(__linux__)
     #include <unistd.h>
 #elif defined(__APPLE__)
@@ -489,7 +491,7 @@ static void ScanDirectoryFilesRecursively(const char *basePath, FilePathList *li
 static void RecordAutomationEvent(void); // Record frame events (to internal events array)
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(PLATFORM_DESKTOP_RGFW)
 // NOTE: We declare Sleep() function symbol to avoid including windows.h (kernel32.lib linkage required)
 void __stdcall Sleep(unsigned long msTimeout);              // Required for: WaitTime()
 #endif
@@ -503,6 +505,8 @@ const char *TextFormat(const char *text, ...);              // Formatting of tex
     #include "platforms/rcore_desktop.c"
 #elif defined(PLATFORM_DESKTOP_SDL)
     #include "platforms/rcore_desktop_sdl.c"
+#elif defined(PLATFORM_DESKTOP_RGFW)
+    #include "platforms/rcore_desktop_rgfw.c"
 #elif defined(PLATFORM_WEB)
     #include "platforms/rcore_web.c"
 #elif defined(PLATFORM_DRM)
@@ -2273,6 +2277,64 @@ bool IsPathFile(const char *path)
     stat(path, &result);
 
     return S_ISREG(result.st_mode);
+}
+
+// Check if fileName is valid for the platform/OS
+bool IsFileNameValid(const char *fileName)
+{
+    bool valid = true;
+
+    if ((fileName != NULL) && (fileName[0] != '\0'))
+    {
+        int length = strlen(fileName);
+        bool allPeriods = true;
+
+        for (int i = 0; i < length; i++)
+        {
+            // Check invalid characters
+            if ((fileName[i] == '<') ||
+                (fileName[i] == '>') ||
+                (fileName[i] == ':') ||
+                (fileName[i] == '\"') ||
+                (fileName[i] == '/') ||
+                (fileName[i] == '\\') ||
+                (fileName[i] == '|') ||
+                (fileName[i] == '?') ||
+                (fileName[i] == '*')) { valid = false; break; }
+
+            // Check non-glyph characters
+            if ((unsigned char)fileName[i] < 32) { valid = false; break; }
+
+            // TODO: Check trailing periods/spaces?
+
+            // Check if filename is not all periods
+            if (fileName[i] != '.') allPeriods = false;
+        }
+
+        if (allPeriods) valid = false;
+
+/*
+        if (valid)
+        {
+            // Check invalid DOS names
+            if (length >= 3)
+            {
+                if (((fileName[0] == 'C') && (fileName[1] == 'O') && (fileName[2] == 'N')) ||   // CON
+                    ((fileName[0] == 'P') && (fileName[1] == 'R') && (fileName[2] == 'N')) ||   // PRN
+                    ((fileName[0] == 'A') && (fileName[1] == 'U') && (fileName[2] == 'X')) ||   // AUX
+                    ((fileName[0] == 'N') && (fileName[1] == 'U') && (fileName[2] == 'L'))) valid = false; // NUL
+            }
+
+            if (length >= 4)
+            {
+                if (((fileName[0] == 'C') && (fileName[1] == 'O') && (fileName[2] == 'M') && ((fileName[3] >= '0') && (fileName[3] <= '9'))) ||  // COM0-9
+                    ((fileName[0] == 'L') && (fileName[1] == 'P') && (fileName[2] == 'T') && ((fileName[3] >= '0') && (fileName[3] <= '9')))) valid = false; // LPT0-9
+            }
+        }
+*/
+    }
+
+    return valid;
 }
 
 // Check if a file has been dropped into window
