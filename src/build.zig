@@ -9,9 +9,14 @@ comptime {
 // get the flags a second time when adding raygui
 var raylib_flags_arr: std.ArrayListUnmanaged([]const u8) = .{};
 
+/// we're not inside the actual build script recognized by the
+/// zig build system; use this type where one would otherwise
+/// use `@This()` when inside the actual entrypoint file.
+const BuildScript = @import("../build.zig");
+
 // This has been tested with zig version 0.12.0
 pub fn addRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, options: Options) !*std.Build.Step.Compile {
-    const raylib_dep = b.dependency(options.raylib_dependency_name, .{
+    const raylib_dep = b.dependencyFromBuildZig(BuildScript, .{
         .target = target,
         .optimize = optimize,
         .raudio = options.raudio,
@@ -112,31 +117,29 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
 
                 raylib.addLibraryPath(.{ .cwd_relative = "/usr/lib" });
                 raylib.addIncludePath(.{ .cwd_relative = "/usr/include" });
+                if (options.linux_display_backend == .X11 or options.linux_display_backend == .Both) {
 
-                switch (options.linux_display_backend) {
-                    .X11 => {
                         raylib.defineCMacro("_GLFW_X11", null);
                         raylib.linkSystemLibrary("X11");
-                    },
-                    .Wayland => {
-                        raylib.defineCMacro("_GLFW_WAYLAND", null);
-                        raylib.linkSystemLibrary("wayland-client");
-                        raylib.linkSystemLibrary("wayland-cursor");
-                        raylib.linkSystemLibrary("wayland-egl");
-                        raylib.linkSystemLibrary("xkbcommon");
-                        raylib.addIncludePath(b.path("src"));
-                        waylandGenerate(b, raylib, "wayland.xml", "wayland-client-protocol");
-                        waylandGenerate(b, raylib, "xdg-shell.xml", "xdg-shell-client-protocol");
-                        waylandGenerate(b, raylib, "xdg-decoration-unstable-v1.xml", "xdg-decoration-unstable-v1-client-protocol");
-                        waylandGenerate(b, raylib, "viewporter.xml", "viewporter-client-protocol");
-                        waylandGenerate(b, raylib, "relative-pointer-unstable-v1.xml", "relative-pointer-unstable-v1-client-protocol");
-                        waylandGenerate(b, raylib, "pointer-constraints-unstable-v1.xml", "pointer-constraints-unstable-v1-client-protocol");
-                        waylandGenerate(b, raylib, "fractional-scale-v1.xml", "fractional-scale-v1-client-protocol");
-                        waylandGenerate(b, raylib, "xdg-activation-v1.xml", "xdg-activation-v1-client-protocol");
-                        waylandGenerate(b, raylib, "idle-inhibit-unstable-v1.xml", "idle-inhibit-unstable-v1-client-protocol");
-                    },
                 }
 
+                if (options.linux_display_backend == .Wayland or options.linux_display_backend == .Both) {
+                    raylib.defineCMacro("_GLFW_WAYLAND", null);
+                    raylib.linkSystemLibrary("wayland-client");
+                    raylib.linkSystemLibrary("wayland-cursor");
+                    raylib.linkSystemLibrary("wayland-egl");
+                    raylib.linkSystemLibrary("xkbcommon");
+                    raylib.addIncludePath(b.path("src"));
+                    waylandGenerate(b, raylib, "wayland.xml", "wayland-client-protocol");
+                    waylandGenerate(b, raylib, "xdg-shell.xml", "xdg-shell-client-protocol");
+                    waylandGenerate(b, raylib, "xdg-decoration-unstable-v1.xml", "xdg-decoration-unstable-v1-client-protocol");
+                    waylandGenerate(b, raylib, "viewporter.xml", "viewporter-client-protocol");
+                    waylandGenerate(b, raylib, "relative-pointer-unstable-v1.xml", "relative-pointer-unstable-v1-client-protocol");
+                    waylandGenerate(b, raylib, "pointer-constraints-unstable-v1.xml", "pointer-constraints-unstable-v1-client-protocol");
+                    waylandGenerate(b, raylib, "fractional-scale-v1.xml", "fractional-scale-v1-client-protocol");
+                    waylandGenerate(b, raylib, "xdg-activation-v1.xml", "xdg-activation-v1-client-protocol");
+                    waylandGenerate(b, raylib, "idle-inhibit-unstable-v1.xml", "idle-inhibit-unstable-v1-client-protocol");
+                }
                 raylib.defineCMacro("PLATFORM_DESKTOP", null);
             } else {
                 if (options.opengl_version == .auto) {
@@ -202,21 +205,16 @@ fn compileRaylib(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
             const cache_include = std.fs.path.join(b.allocator, &.{ b.sysroot.?, "cache", "sysroot", "include" }) catch @panic("Out of memory");
             defer b.allocator.free(cache_include);
 
-            if (comptime builtin.zig_version.minor > 12) {
-                var dir = std.fs.cwd().openDir(cache_include, std.fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = true }) catch @panic("No emscripten cache. Generate it!");
-                dir.close();
-                raylib.addIncludePath(b.path(cache_include));
-            } else {
-                var dir = std.fs.openDirAbsolute(cache_include, std.fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = true }) catch @panic("No emscripten cache. Generate it!");
-                dir.close();
-                raylib.addIncludePath(.{ .path = cache_include });
-            }
+            var dir = std.fs.openDirAbsolute(cache_include, std.fs.Dir.OpenDirOptions{ .access_sub_paths = true, .no_follow = true }) catch @panic("No emscripten cache. Generate it!");
+            dir.close();
+            raylib.addIncludePath(.{ .cwd_relative = cache_include });
         },
         else => {
             @panic("Unsupported OS");
         },
     }
 
+    raylib.addIncludePath(b.path("src"));
     raylib.root_module.addCSourceFiles(.{
         .root = b.path("src"),
         .files = c_source_files.items,
@@ -253,10 +251,9 @@ pub const Options = struct {
     raygui: bool = false,
     platform_drm: bool = false,
     shared: bool = false,
-    linux_display_backend: LinuxDisplayBackend = .X11,
+    linux_display_backend: LinuxDisplayBackend = .Both,
     opengl_version: OpenglVersion = .auto,
 
-    raylib_dependency_name: []const u8 = "raylib",
     raygui_dependency_name: []const u8 = "raygui",
 };
 
@@ -271,11 +268,11 @@ pub const OpenglVersion = enum {
 
     pub fn toCMacroStr(self: @This()) []const u8 {
         switch (self) {
-            .auto    => @panic("OpenglVersion.auto cannot be turned into a C macro string"),
-            .gl_1_1   => return "GRAPHICS_API_OPENGL_11",
-            .gl_2_1   => return "GRAPHICS_API_OPENGL_21",
-            .gl_3_3   => return "GRAPHICS_API_OPENGL_33",
-            .gl_4_3   => return "GRAPHICS_API_OPENGL_43",
+            .auto => @panic("OpenglVersion.auto cannot be turned into a C macro string"),
+            .gl_1_1 => return "GRAPHICS_API_OPENGL_11",
+            .gl_2_1 => return "GRAPHICS_API_OPENGL_21",
+            .gl_3_3 => return "GRAPHICS_API_OPENGL_33",
+            .gl_4_3 => return "GRAPHICS_API_OPENGL_43",
             .gles_2 => return "GRAPHICS_API_OPENGL_ES2",
             .gles_3 => return "GRAPHICS_API_OPENGL_ES3",
         }
@@ -285,6 +282,7 @@ pub const OpenglVersion = enum {
 pub const LinuxDisplayBackend = enum {
     X11,
     Wayland,
+    Both,
 };
 
 pub fn build(b: *std.Build) !void {

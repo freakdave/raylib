@@ -190,7 +190,8 @@ void ToggleFullscreen(void)
     if (enterFullscreen)
     {
         // NOTE: The setTimeouts handle the browser mode change delay
-        EM_ASM(
+        EM_ASM
+        (
             setTimeout(function()
             {
                 Module.requestFullscreen(false, false);
@@ -298,7 +299,8 @@ void ToggleBorderlessWindowed(void)
     {
         // NOTE: 1. The setTimeouts handle the browser mode change delay
         //       2. The style unset handles the possibility of a width="value%" like on the default shell.html file
-        EM_ASM(
+        EM_ASM
+        (
             setTimeout(function()
             {
                 Module.requestFullscreen(false, true);
@@ -880,6 +882,13 @@ void SetMouseCursor(int cursor)
 
         CORE.Input.Mouse.cursor = cursor;
     }
+}
+
+// Get physical key name.
+const char *GetKeyName(int key)
+{
+    TRACELOG(LOG_WARNING, "GetKeyName() not implemented on target platform");
+    return "";
 }
 
 // Register all input events
